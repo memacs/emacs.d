@@ -1,51 +1,145 @@
-;; 设置启动时屏蔽欢迎信息
-;; (setq inhibit-startup-message t)
+;; -*- emacs-lisp -*-
+;; Time-stamp: <Last changed 2012-11-30 19:31:12 by Art Vandelay, vandelay>
 
-;; 加载package文件
+;;keep message buffer complete.
+(setq message-log-max t)
+
+(message "Reading configuration file...")
+
+;;Initialize files----------------------------
+;; Where to find external lisp-files, for modes, etc. I put my *el
+;; files in "~/.emacs.d/elisp/" where ~/.emacs.d/ is the
+;; user-emacs-directory
+(add-to-list 'load-path (expand-file-name "elisp" user-emacs-directory))
+;;--------------------------------------------
+
+;; For the built in customization UI in emacs that no one uses. If
+;; some package tries to use it, at least have the decency to keep
+;; this config file clean.
+(setq custom-file "~/.emacs.d/custom.el")
+(load custom-file 'noerror)
+
+;; Note: Don't (require ...) packages prior to loading them with the
+;; emacs package system ("elpa"), as it is not meaningful, doesn't
+;; serve any purpose, nor semantically correct. Packages loaded in the
+;; package system are autoloaded when visiting files where they're
+;; needed (if well written).
+
 (require 'package)
-;; 设置启动是不自动加载所有package
-(setq package-enable-at-startup nil)
-;; 添加package源
-(add-to-list 'package-archives
-	     '("melpa" . "https://melpa.org/packages/"))
-;; 初始化package
+
+;; Since emacs 24 there's a very neat package system.
+(when (>= emacs-major-version 24)
+(setq package-archives '(("gnu"   . "http://elpa.emacs-china.org/gnu/")
+			 ("melpa" . "http://elpa.emacs-china.org/melpa/"))))
+
 (package-initialize)
 
-;;https://github.com/jwiegley/use-package
-;; Bootstrap `use-package'
-(unless (package-installed-p 'use-package)
-	(package-refresh-contents)
-	(package-install 'use-package))
+;;Auto-install missing packages ---------------
 
-;; https://github.com/larstvei/Try
-(use-package try
-	:ensure t)
+;; packages I use all the time, which _must_
+;; be installed on all my emacs-machines:
+(setq my-must-have-packages
+      '(auctex                          ; a must for LaTeX
+        avy                             ; awesome for jumping / navigating cursor on screen
+        bbcode-mode                     ; for editing forum-posts
+        beacon                          ; show whre the cursor is when jumping between buffers & frames
+        browse-kill-ring                ; a must! C-y (and M-y) on steroids!
+        color-theme-sanityinc-tomorrow  ; blue version is nice (doesn't need the old color-theme package)
+        command-log-mode                ; log pressed keys to buffer (e.g. useful for presentations)
+        company                         ; for auto-compleate variables/functions (with drop down menu)
+        company-auctex                  ; auto-complete for latex
+        dtrt-indent                     ; awesome: automagically guess indentation style of file
+        ;;emms                          ; emacs multimedia system, (for playlists etc.)
+        erc-hl-nicks                    ; colour names on IRC
+        ;;flycheck                        ; check code sanity while I type
+        geiser                          ; for writing Scheme lisp
+        gnuplot                         ; gnuplot-mode
+        goto-chg                        ; navigate in buffer by using undo-history
+        graphviz-dot-mode               ; because syntax highlight in graphviz scripts is nice
+        green-phosphor-theme            ; a color theme, as the name suggests
+        htmlize                         ; render current buffer face and syntax highlight to html
+        lua-mode                        ; at least gives syntax highlight for Lua-code
+        magit                           ; powerful git-interface
+        matlab-mode                     ; yuck! when you must, you must
+        markdown-mode                   ; markdown-mode for github posts
+        mediawiki                       ; mode for editing mediawiki-buffers
+        org                             ; use a more recent than default emacs
+        paredit                         ; excellet for lisp, but steep lerning, for parenthesis manegement
+        pov-mode                        ; for editing pov-ray files, (raytracer)
+        rainbow-mode                    ; Colour hex rgb values, e.q. "#00ff00" in it's colour
+        slime                           ; Superios Lisp Interaction Mode for Emacs
+        ;;smartparens                   ; better parenthesis management: insert/delete/replace pairs
+        smex                            ; smarter "M-x"
+        sml-modeline                    ; I use it to replaces scrollbar, show info in modeline instead
+        stumpwm-mode                    ; I'm not actually using this, but for my WM
+        volatile-highlights             ; slightly shade just pasted region
+        wanderlust                      ; email-client
+        which-key                       ; smarter when half finished key combo
+        with-editor                     ; make emacs default $EDITOR
+        yasnippet                       ; auto-complete templates (e.g. if, for, do ...)
+        ))
 
-;; https://github.com/justbur/emacs-which-key
-(use-package which-key
-	:ensure t 
-	:config
-	(which-key-mode))
+;; install any packages in my-must-have-packages,
+;; if they are not installed already
+(let ((refreshed nil))
+  (when (not package-archive-contents)
+    (package-refresh-contents)
+    (setq refreshed t))
+  (dolist (pkg my-must-have-packages)
+    (when (and (not (package-installed-p pkg))
+               (assoc pkg package-archive-contents))
+      (unless refreshed
+        (package-refresh-contents)
+        (setq refreshed t))
+      (package-install pkg))))
 
-;;https://github.com/sabof/org-bullets
-(use-package org-bullets
-  :ensure t
-  :config
-  (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1))))
+(defun package-list-unaccounted-packages ()
+  "Like `package-list-packages', but shows only the packages that
+  are installed and are not in `my-must-have-packages'.  Useful for
+  cleaning out unwanted packages."
+  (interactive)
+  (package-show-package-list
+   (remove-if-not (lambda (x) (and (not (memq x my-must-have-packages))
+                                   (not (package-built-in-p x))
+                                   (package-installed-p x)))
+                  (mapcar 'car package-archive-contents))))
+;;---------------------------------------------
 
+;; Where to find Emacs24 themes for M-x load-theme
+(when (>= emacs-major-version 24)
+  (add-to-list 'custom-theme-load-path "~/.emacs.d/themes")
+  (load-theme 'zenburn t nil)
+  ;;(load-theme 'sanityinc-tomorrow-blue t nil)
+  )
 
-;;
-(use-package lua-mode
-  :ensure t)
+;;--------------------------------------------
+(tool-bar-mode -1)                        ;;never have a retarded tool-bar at top
+(menu-bar-mode -1)                        ;;never have a retarded menu-bar at top
+(scroll-bar-mode -1)                      ;;never have a retarded scrill-bar at side
+(setq-default indicate-empty-lines t)     ;;show (in left margin) marker for empty lines
 
-(use-package random-splash-image
-  :ensure t
-  :config
-  (setq random-splash-image-dir (concat (getenv "HOME") "/Pictures/splash-images"))
-  (random-splash-image-set))
+;;NOTE: not good when in daemon mode...
+;; (cond ((eq window-system 'x)
+;;        ;;Put properties for emacs in Xorg here:
+;;        (message "Running in X")
+;;        (setq-default indicate-empty-lines t))
+;;       (t
+;;        ;; Put properties for emacs in CLI here
+;;        (message "Running in terminal")
+;;        ;;(menu-bar-mode 0)
+;;        ))
+;;--------------------------------------------
 
-(use-package cal-china-x
-  :ensure t)
+;;Modline-------------------------------------
+(line-number-mode t)                        ;; show line numbers
+(column-number-mode t)                      ;; show column numbers
+;;(size-indication-mode t)                    ;; show file size (emacs 22+)
 
-;; 隐藏toolbar
-(tool-bar-mode -1)
+;;(when (> (display-color-cells) 16)          ;if not in CLI
+(if (require 'sml-modeline nil 'noerror)  ;; use sml-modeline if available
+    (progn
+      (sml-modeline-mode 1)               ;; show buffer pos in the mode line
+      (scroll-bar-mode -1))               ;; turn off the scrollbar
+  (scroll-bar-mode -1))                   ;; otherwise, still don't show a scrollbar...
+;;--------------------------------------------
+
