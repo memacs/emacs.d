@@ -23,9 +23,9 @@
         green-phosphor-theme            ; a color theme, as the name suggests
         htmlize                         ; render current buffer face and syntax highlight to html
         lua-mode                        ; at least gives syntax highlight for Lua-code
-        magit                           ; powerful git-interface
+        ;;magit                           ; powerful git-interface
         matlab-mode                     ; yuck! when you must, you must
-        markdown-mode                   ; markdown-mode for github posts
+        ;;markdown-mode                   ; markdown-mode for github posts
         mediawiki                       ; mode for editing mediawiki-buffers
         org                             ; use a more recent than default emacs
         paredit                         ; excellet for lisp, but steep lerning, for parenthesis manegement
@@ -38,8 +38,8 @@
         stumpwm-mode                    ; I'm not actually using this, but for my WM
         volatile-highlights             ; slightly shade just pasted region
         wanderlust                      ; email-client
-        which-key                       ; smarter when half finished key combo
-        with-editor                     ; make emacs default $EDITOR
+        ;;which-key                       ; smarter when half finished key combo
+        ;with-editor                     ; make emacs default $EDITOR
         yasnippet                       ; auto-complete templates (e.g. if, for, do ...)
         ))
 
